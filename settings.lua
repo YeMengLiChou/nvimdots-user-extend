@@ -22,7 +22,7 @@ settings["lsp_deps"] = {
 	"ruff",
 	"zuban",
 	"kotlin_language_server",
-	"java_language_server",
+	-- "java_language_server", -- repo mvn install has problems.
 	"ts_ls",
 }
 
@@ -69,7 +69,7 @@ settings["treesitter_deps"] = {
 	"thrift",
 	"sql",
 	"scss",
-	"reqirements",
+	"requirements",
 	"proto",
 }
 
