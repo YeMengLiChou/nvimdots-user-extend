@@ -1,9 +1,14 @@
+local global = require("core.global")
+local utils = require("user.utils")
 local settings = {}
+
+-- setup Android termux
+require("user.termux").setup()
 
 -- enable for updating lazy plugins (git pull 需要用到 ssh)
 settings["use_ssh"] = true
 -- don't use copilot
-settings["use_copilot"] = true
+settings["use_copilot"] = false
 
 settings["colorscheme"] = "catppuccin"
 
@@ -12,19 +17,28 @@ settings["disabled_plugins"] = {
 }
 
 -- 安装 lsp
-settings["lsp_deps"] = {
-	"bashls",
-	"clangd",
-	"gopls",
-	"html",
-	"jsonls",
-	"lua_ls",
-	"ruff",
-	"zuban",
-	"kotlin_language_server",
-	-- "java_language_server", -- repo mvn install has problems.
-	"ts_ls",
-}
+settings["lsp_deps"] = function(list)
+	local my_lsp_deps = {
+		"bashls",
+		"clangd",
+		"gopls",
+		"html",
+		"jsonls",
+		"lua_ls",
+		"ruff",
+		"zuban",
+		"kotlin_language_server",
+		-- "java_language_server", -- repo mvn install has problems.
+		"ts_ls",
+	}
+	vim.list_extend(list, my_lsp_deps)
+	vim.fn.uniq(list)
+	-- termux not support clangd by mason install, use system.
+	if global.is_termux then
+		utils.remove_all(list, "clangd")
+	end
+	return list
+end
 
 settings["dap_deps"] = {
 	"codelldb", -- C-Family
