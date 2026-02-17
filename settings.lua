@@ -2,6 +2,8 @@ local global = require("core.global")
 local utils = require("user.utils")
 local settings = {}
 
+require("user.ssh").setup()
+
 -- setup Android termux
 require("user.termux").setup()
 

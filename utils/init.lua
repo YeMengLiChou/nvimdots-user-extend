@@ -8,7 +8,7 @@ M.remove_all = function(t, x)
 	end
 end
 
-M.is_use_ssh = function()
+M.is_in_ssh = function()
 	return vim.env.SSH_CONNECTION ~= nil
 		or vim.env.SSH_CLIENT ~= nil
 		or vim.env.SSH_TTY ~= nil

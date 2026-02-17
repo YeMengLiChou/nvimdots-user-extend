@@ -1,6 +1,20 @@
 local M = {}
 local global = require("core.global")
 
+local function fix_toggleterm()
+	local shell = vim.env.SHELL or ""
+	if shell ~= "" then
+		return
+	end
+	local maybe_shells = { "zsh", "bash" }
+	for _, value in pairs(maybe_shells) do
+		if vim.fn.executable(value) == 1 then
+			vim.o.shell = value
+			return
+		end
+	end
+end
+
 -- check termux system
 -- @return 0 - no termux; 1 - termux; 2 - termux and use proot-distro
 local function is_termux()
@@ -24,7 +38,10 @@ function M.setup()
 	global.is_termux = check_termux == 1 or check_termux == 2
 	global.is_termux_proot = check_termux == 2
 	-- config clipboard if use termux and not proot-distro
-	if global.is_termux and not global.is_termux_proot then
+	if not global.is_termux then
+		return
+	end
+	if not global.is_termux_proot then
 		vim.g.clipboard = {
 			name = "termux-android-clipboard",
 			copy = {
@@ -37,6 +54,8 @@ function M.setup()
 			},
 			cache_enabled = 0,
 		}
+	else -- use proot-distro debian
+		fix_toggleterm()
 	end
 end
 
