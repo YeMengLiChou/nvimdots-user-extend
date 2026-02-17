@@ -6,6 +6,9 @@ M.setup = function()
 	global.is_in_ssh = utils.is_in_ssh()
 
 	if global.is_in_ssh then
+		vim.schedule(function()
+			vim.notify("detected ssh environment.")
+		end)
 		-- SSH 下关掉 unnamed/unnamedplus，避免 p 去读 OSC52 剪贴板
 		-- 通过 schedule 等待 options 加载完成后再覆盖
 		vim.schedule(function()

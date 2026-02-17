@@ -3,6 +3,7 @@ local utils = require("user.utils")
 local settings = {}
 
 require("user.ssh").setup()
+require("user.custom").setup()
 
 -- setup Android termux
 require("user.termux").setup()
@@ -20,7 +21,12 @@ settings["disabled_plugins"] = {
 
 -- 安装 lsp
 settings["lsp_deps"] = function(list)
-	local my_lsp_deps = {
+	local excludes = {}
+	-- termux not support clangd by mason install, use system.
+	if global.is_termux then
+		table.insert(excludes, "clangd")
+	end
+	return utils.merge(list, {
 		"bashls",
 		"clangd",
 		"gopls",
@@ -32,14 +38,7 @@ settings["lsp_deps"] = function(list)
 		"kotlin_language_server",
 		-- "java_language_server", -- repo mvn install has problems.
 		"ts_ls",
-	}
-	vim.list_extend(list, my_lsp_deps)
-	vim.fn.uniq(list)
-	-- termux not support clangd by mason install, use system.
-	if global.is_termux then
-		utils.remove_all(list, "clangd")
-	end
-	return list
+	}, excludes)
 end
 
 settings["dap_deps"] = {
