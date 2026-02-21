@@ -1,5 +1,9 @@
 return function(options)
-	require("nvim-treesitter.parsers").get_parser_configs().zsh = {
+	local ok, parser = pcall(require, "nvim-treesitter.parser")
+	if not ok then
+		return options
+	end
+	parser.get_parser_configs().zsh = {
 		install_info = {
 			url = "https://github.com/georgeharker/tree-sitter-zsh",
 			files = { "src/parser.c", "src/scanner.c" },
