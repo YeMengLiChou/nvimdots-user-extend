@@ -19,22 +19,20 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 	end,
 })
 
--- enable zsh treesitter
-vim.api.nvim_create_autocmd("User", {
-	pattern = "TSUpdate",
-	callback = function()
-		vim.notify("ts update")
-	end,
-})
-
 -- load user cmds
 local user_cmd_path = require("core.global").vim_path .. "/lua/user/cmds"
-local user_cmds = vim.split(vim.fn.glob(user_cmd_path .. "/*.lua"), "\n", { trimempty = true })
-for _, cmd_name in ipairs(user_cmds) do
-	local name = cmd_name:match("[^@/\\]*.lua$")
-	local ok = pcall(require, "user.cmds." .. name:sub(0, #name - 4))
+local user_cmds = vim.split(vim.fn.glob(user_cmd_path .. "/*"), "\n", { trimempty = true })
+for _, cmd in ipairs(user_cmds) do
+	local name
+	if vim.fn.isdirectory(cmd) then
+		name = cmd:match("[^@/\\]*$") -- 取目录名称
+	else
+		name = cmd:match("[^@/\\]*.lua$")
+		name = name:sub(0, #name - 4) -- 取 lua 名称
+	end
+	local ok, err = pcall(require, "user.cmds." .. name)
 	if not ok then
-		vim.notify("load cmds failed." .. cmd_name)
+		vim.notify("load cmds failed." .. cmd .. " " .. name .. " err: " .. vim.inspect(err), vim.log.levels.ERROR)
 	end
 end
 
