@@ -20,7 +20,9 @@ local function check_algorithm_dir()
 end
 
 local function load_subcommands()
-	local dir = vim.fs.dirname(debug.getinfo(1, "S").short_src)
+	local src = debug.getinfo(1, "S").source
+	src = src:sub(1, 1) == "@" and src:sub(2) or src
+	local dir = vim.fs.dirname(src)
 	local ignored_files = {
 		"init.lua",
 		"utils.lua",
@@ -33,7 +35,7 @@ local function load_subcommands()
 		end
 	)
 	for _, value in ipairs(subcommands) do
-		local name = value:match("[^@/\\]*.lua$")
+		local name = value:match("[^@/\\]*%.lua$")
 		name = name:sub(0, #name - 4) -- 取 lua 名称
 		local ok, res = pcall(require, "user.cmds.algorithm." .. name)
 		if not ok then
@@ -46,16 +48,18 @@ local function load_subcommands()
 end
 
 local function setup_env()
-	local root = vim.fs.root(0, { ".git" }) or vim.fn.getcwd()
-	local input = vim.fs.joinpath(root, "in")
+	local env = {}
+	-- 打开的工作目录
+	env.root = vim.fs.root(0, { ".git" }) or vim.fn.getcwd()
+	-- 输入文件
+	env.input = vim.fs.joinpath(env.root, "in")
+	-- 命令目录
+	env.cmd_config_path = vim.fs
 
 	---@type AlgorithmEnv
-	vim.g.algorithm_env = {
-		root = root,
-		input = input,
-	}
+	vim.g.algorithm_env = env
 	-- setup input env
-	vim.env.input = vim.g.algorithm_env.input
+	vim.env.input = env.input
 end
 
 local function algorithm_complete(arglead, cmdline, cursor_pos)

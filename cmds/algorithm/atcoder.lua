@@ -74,28 +74,42 @@ end
 local function create_contest_files(root, num, target, suffix)
 	local contest_dir = vim.fs.joinpath(vim.g.algorithm_env.root, root, "ABC" .. num)
 	local ok, err = utils.ensure_dir_created(contest_dir)
-	local open_file = nil
+	local open_files = {}
 	if not ok then
-		return false, open_file, err
+		return false, open_files, err
 	end
 
-	-- 仅创建单个文件
+	local file
 	if #target == 1 then
-		ok, err, open_file = create_single_contest_file(contest_dir, target, suffix)
+		-- 仅创建单个文件
+		ok, err, file = create_single_contest_file(contest_dir, target, suffix)
+		table.insert(open_files, file)
 	else
 		-- 创建所有文件
-		local file
 		for i = string.byte("A"), string.byte("E") do
 			ok, err, file = create_single_contest_file(contest_dir, string.char(i), suffix)
 			if not ok then
 				return ok, nil, err
 			end
-			if not open_file then
-				open_file = file
-			end
+			table.insert(open_files, file)
 		end
 	end
-	return true, open_file, nil
+	return true, open_files, nil
+end
+
+local function ensure_input_file_created()
+	local input = vim.g.algorithm_env.input
+	if vim.fn.filereadable(input) == 1 then
+		return true, input
+	end
+	if not input or #input == 1 then
+		return false, nil
+	end
+	local ok, _ = utils.ensure_file_created(input)
+	if not ok then
+		return false, nil
+	end
+	return true, input
 end
 
 return {
@@ -105,16 +119,30 @@ return {
 		if not cfg then
 			return false, err
 		end
-		local ok, file
-		ok, file, err =
+		local ok, files
+		ok, files, err =
 			create_contest_files(atcoder_config.root, cfg.contest, cfg.target_problems, cfg.use_solution_suffix)
-		if not ok then
-			return false, err
+		if not ok or not files or #files == 0 then
+			return false, err or "failed to create files."
 		end
-		if not file then
-			return false, "failed to create file."
+		files = vim.fn.reverse(files)
+		-- 先在上侧窗口打开一个文件
+		vim.cmd.edit(vim.fn.fnameescape(files[1]))
+
+		-- 再在下侧窗口打开 in 文件
+		local input
+		ok, input = ensure_input_file_created()
+		if ok and input and #input > 0 then
+			vim.cmd.split()
+			vim.api.nvim_win_set_height(0, 10)
+			vim.cmd.edit(vim.fn.fnameescape(input))
+			vim.cmd.wincmd("k") -- 回到左侧窗口
 		end
-		vim.cmd.edit(vim.fn.fnameescape(file))
+
+		-- 打开剩余的文件
+		for idx = 2, #files do
+			vim.cmd.edit(vim.fn.fnameescape(files[idx]))
+		end
 		return true
 	end,
 	command_complete = function(_, arglead)
