@@ -4,17 +4,20 @@ local leetcode_config = {
 	week_root = "leetcode/week", -- 周赛
 	dweek_root = "leetcode/dweek", -- 双周赛
 	problems_root = "leetcode/problems", -- 普通题目
+	lcr_root = "leetcode/lcr", -- lcr题目
 	solution_suffix = "go", -- 文件后缀
 	problem_digits = 4, -- 整体数字位数, L00xx
 }
 
-local options = { "-w", "-dw", "-p", "--suffix" }
+local options = { "-w", "--dweek", "-p", "--lcr", "--suffix" }
+local num_options = { "-w", "--dweek", "-p", "--lcr" }
 
 local function parse_leetcode_args(fargs)
 	local parsed = {
 		weeks = -1,
 		dweeks = -1,
 		problems = -1,
+		lcr = -1,
 		use_solution_suffix = leetcode_config.solution_suffix,
 	}
 	local i = 1
@@ -31,15 +34,17 @@ local function parse_leetcode_args(fargs)
 				return nil, "missing suffix value."
 			end
 			parsed.use_solution_suffix = suffix
-		elseif vim.list_contains(options, flag) then
+		elseif vim.list_contains(num_options, flag) then
 			local num = utils.normalize_digits(fargs[i + 1], -1)
 			if num == -1 then
 				return nil, ("missing number or invalid number for %s: %s"):format(flag, num)
 			end
 			if flag == "-w" then
 				parsed.weeks = num
-			elseif flag == "-dw" then
+			elseif flag == "--dweek" then
 				parsed.dweeks = num
+			elseif flag == "--lcr" then
+				parsed.lcr = num
 			else
 				parsed.problems = num
 			end
@@ -47,6 +52,28 @@ local function parse_leetcode_args(fargs)
 			return nil, ("invalid options for %s."):format(flag)
 		end
 		i = i + 2
+	end
+
+	local cnt = 0 -- 统计出现次数
+	local has_option = ""
+	for k, v in pairs(parsed) do
+		if type(v) == "number" and v > 0 then
+			cnt = cnt + 1
+			has_option = k
+		end
+		if cnt > 1 then
+			return false,
+				("leetcode only accept one of -w/-p/--lcr/--dweek position, but now has %s and %s"):format(
+					has_option,
+					k
+				)
+		end
+	end
+	if cnt == 0 then
+		return false, "leetcode needs one of -w/-p/--lcr/--dweek with positive integer"
+	end
+	if #parsed.use_solution_suffix == 0 then
+		return false, "invalid suffix config, please set non-empty suffix"
 	end
 	return parsed
 end
@@ -105,17 +132,11 @@ local function create_problem_dir(root, num, digits, suffix)
 end
 
 local M = {
-	help = "leetcode -w/-dw/-p <num> [--suffix <extend>]",
+	help = "leetcode -w/-p/--lcr/--dweek <num> [--suffix <extend>]",
 	handle = function(fargs)
 		local cfg, err = parse_leetcode_args(fargs)
 		if not cfg then
 			return false, err
-		end
-		if cfg.weeks <= 0 and cfg.dweeks <= 0 and cfg.problems <= 0 then
-			return false, "leetcode needs one of -w/-dw/-p with positive integer"
-		end
-		if #cfg.use_solution_suffix == 0 then
-			return false, "invalid suffix config, please set non-empty suffix"
 		end
 
 		local ok, file
@@ -123,6 +144,13 @@ local M = {
 			ok, file, err = create_contest_dirs(leetcode_config.week_root, cfg.problems, cfg.use_solution_suffix)
 		elseif cfg.dweeks > 0 then
 			ok, file, err = create_contest_dirs(leetcode_config.dweeks_root, cfg.dweeks, cfg.use_solution_suffix)
+		elseif cfg.lcr > 0 then
+			ok, file, err = create_problem_dir(
+				leetcode_config.lcr_root,
+				cfg.lcr,
+				leetcode_config.problem_digits,
+				cfg.use_solution_suffix
+			)
 		else
 			ok, file, err = create_problem_dir(
 				leetcode_config.problems_root,
