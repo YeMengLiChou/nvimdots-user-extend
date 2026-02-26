@@ -89,7 +89,7 @@ settings["treesitter_deps"] = {
 }
 
 -- for neovide config, ignore 'neovide_' prefix, it will be concated by core init.
-settings["neovide"] = {
+settings["neovide_config"] = {
 	-- disable auto fullscreen
 	fullscreen = false,
 	-- remember previous window size
@@ -102,7 +102,7 @@ settings["neovide"] = {
 	opacity = 0.95,
 	normal_opacity = 0.95,
 	-- setup font, font size is `:hxx`
-	guifont = "JetBrainsMono Nerd Font:h13",
+	guifont = "JetBrainsMono Nerd Font:h14",
 }
 
 settings["dashboard_image"] = {
