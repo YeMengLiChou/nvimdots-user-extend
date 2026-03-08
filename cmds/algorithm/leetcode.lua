@@ -78,39 +78,39 @@ local function parse_leetcode_args(fargs)
 	return parsed
 end
 
----创建对应目录
+---创建比赛用的目录，<root>/<num>/Qx/solution.<suffix>
 ---@param root string
 ---@param num integer
 ---@param suffix string
 ---@return boolean 是否创建成功
----@return string|nil 打开文件的路径
+---@return string[] 打开文件的路径
 ---@return string|nil 错误信息
 local function create_contest_dirs(root, num, suffix)
-	local contest_dir = vim.fs.joinpath(vim.g.algorithm_env.root, root, num)
+	local contest_dir = vim.fs.joinpath(vim.g.algorithm_env.root, root, tostring(num))
 	local ok, err = utils.ensure_dir_created(contest_dir)
-	local open_file = nil
+	local open_files = {}
 	if not ok then
-		return false, open_file, err
+		return false, open_files, err
 	end
 	for idx = 1, 4 do
 		local q_dir = vim.fs.joinpath(contest_dir, "Q" .. tostring(idx))
 		ok, err = utils.ensure_dir_created(q_dir)
 		if not ok then
-			return false, open_file, err
+			return false, open_files, err
 		end
 		local file = vim.fs.joinpath(q_dir, "solution." .. suffix)
 		ok, err = utils.ensure_file_created(file)
 		if not ok then
-			return false, open_file, err
+			return false, open_files, err
 		end
 		if idx == 1 then
-			open_file = file
+			table.insert(open_files, file)
 		end
 	end
-	return true, open_file, err
+	return true, open_files, err
 end
 
----创建普通问题的文件
+---创建普通问题的文件 <root>/L00<num>/L00<num>.<suffix>
 ---@param root string
 ---@param num integer
 ---@param digits integer
@@ -119,7 +119,6 @@ end
 ---@return string|nil
 ---@return string|nil
 local function create_problem_dir(root, num, digits, suffix)
-	-- 创建 root/L00xx/L00xx.suffix
 	local name = string.format("L%0" .. tostring(digits) .. "d", num)
 	local problem_dir = vim.fs.joinpath(vim.g.algorithm_env.root, root, name)
 	local ok, err = utils.ensure_dir_created(problem_dir)
@@ -141,7 +140,7 @@ local M = {
 
 		local ok, file
 		if cfg.weeks > 0 then
-			ok, file, err = create_contest_dirs(leetcode_config.week_root, cfg.problems, cfg.use_solution_suffix)
+			ok, file, err = create_contest_dirs(leetcode_config.week_root, cfg.weeks, cfg.use_solution_suffix)
 		elseif cfg.dweeks > 0 then
 			ok, file, err = create_contest_dirs(leetcode_config.dweeks_root, cfg.dweeks, cfg.use_solution_suffix)
 		elseif cfg.lcr > 0 then
@@ -165,7 +164,15 @@ local M = {
 		if not file then
 			return false, "failed to create files."
 		end
-		vim.cmd.edit(vim.fn.fnameescape(file))
+
+		if type(file) == "string" then
+			vim.cmd.edit(vim.fn.fnameescape(file))
+		elseif type(file) == "table" and vim.islist(file) then
+			file = vim.fn.reverse(file)
+			for _, value in ipairs(file) do
+				vim.cmd.edit(vim.fn.fnameescape(value))
+			end
+		end
 		return true
 	end,
 	command_complete = function(_, arglead)
